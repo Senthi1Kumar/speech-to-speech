@@ -71,6 +71,9 @@ class ResponseHandler(RealtimeBaseHandler):
         st.response_pending = False
         st.current_response_params = None
         st.pending_output_text_parts = []
+        st.last_decode_tok_s = None
+        st.last_prefill_tok_s = None
+        st.last_llm_tpot_ms = None
 
     def _start_item(self, conn_id: str) -> str:
         """Generate a new item ID, reset content index, and store it."""
@@ -104,7 +107,14 @@ class ResponseHandler(RealtimeBaseHandler):
             status_details = RealtimeResponseStatus(type=status, reason=reason)  # type: ignore[arg-type]
 
         rp = st.current_response_params
-        metadata = rp.metadata if rp and rp.metadata else None
+        metadata = dict(rp.metadata) if rp and rp.metadata else {}
+        if st.last_decode_tok_s is not None:
+            metadata["decode_tok_s"] = f"{st.last_decode_tok_s:.1f}"
+        if st.last_prefill_tok_s is not None:
+            metadata["prefill_tok_s"] = f"{st.last_prefill_tok_s:.1f}"
+        if st.last_llm_tpot_ms is not None:
+            metadata["llm_tpot_ms"] = f"{st.last_llm_tpot_ms:.2f}"
+        metadata = metadata or None
 
         voice: Optional[str] = None
         if rp and rp.audio and rp.audio.output and rp.audio.output.voice:

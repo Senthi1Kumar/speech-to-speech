@@ -111,6 +111,17 @@ def _render_transcript(snapshot: list[Any]) -> str:
 
 _JSON_BLOCK_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
 
+# Fallback for models (observed reliably with a small quantized Gemma-4) that
+# ignore the "emit only JSON" instruction and instead return a consistent
+# labeled-text format: "user_summary: ...\nassistant_summary: ...", sometimes
+# without the colon. Rather than losing the whole compaction cycle (which lets
+# history grow unbounded until it hard-crashes the turn on a context-size
+# error), parse this real, observed shape directly.
+_LABELED_SUMMARY_RE = re.compile(
+    r"user_summary:?\s*(.*?)\s*assistant_summary:?\s*(.*)",
+    re.IGNORECASE | re.DOTALL,
+)
+
 
 def _extract_json(text: str) -> dict[str, Any]:
     """Extract the first JSON object from *text*, stripping markdown code fences."""
@@ -126,7 +137,14 @@ def _extract_json(text: str) -> dict[str, Any]:
     start = text.find("{")
     end = text.rfind("}")
     if start != -1 and end > start:
-        return json.loads(text[start : end + 1])
+        try:
+            return json.loads(text[start : end + 1])
+        except json.JSONDecodeError:
+            pass
+
+    m = _LABELED_SUMMARY_RE.search(text)
+    if m:
+        return {"user_summary": m.group(1).strip(), "assistant_summary": m.group(2).strip()}
 
     raise ValueError(f"No JSON object found in compaction response: {text!r}")
 

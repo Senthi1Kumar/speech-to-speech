@@ -20,11 +20,22 @@ SPEECHABLE_PATTERN = re.compile(
     flags=re.UNICODE,
 )
 
+# LFM / llama.cpp sometimes emits tool-call markup as plain text when tools are
+# stripped but the chat template still primes call tokens.
+_TOOL_CALL_MARKUP_RE = re.compile(
+    r"<\|tool_call_start\|>.*?<\|tool_call_end\|>"
+    r"|<\|tool_calls_section_begin\|>.*?<\|tool_calls_section_end\|>"
+    r"|<\|tool_call_start\|>|<\|tool_call_end\|>"
+    r"|<\|tool_calls_section_begin\|>|<\|tool_calls_section_end\|>",
+    flags=re.DOTALL | re.IGNORECASE,
+)
+
 
 def remove_unspeechable(text: str) -> str:
     """Keep only speechable characters: letters, digits, punctuation, whitespace.
     support unicode characters (english, arabic, chinese, japanese, korean, etc.)
     """
+    text = _TOOL_CALL_MARKUP_RE.sub("", text)
     text = text.translate(SMART_PUNCT_TRANSLATION)
     return SPEECHABLE_PATTERN.sub("", text)
 

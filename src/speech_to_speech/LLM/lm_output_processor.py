@@ -72,6 +72,9 @@ class LMOutputProcessor(BaseHandler[LLMOut, TTSIn]):
                     TokenUsageEvent(
                         input_tokens=lm_output.input_tokens or 0,
                         output_tokens=lm_output.output_tokens or 0,
+                        decode_tok_s=lm_output.decode_tok_s,
+                        prefill_tok_s=lm_output.prefill_tok_s,
+                        llm_tpot_ms=lm_output.llm_tpot_ms,
                         turn_id=lm_output.turn_id,
                         turn_revision=lm_output.turn_revision,
                     )

@@ -13,3 +13,12 @@ class ParaformerSTTHandlerArguments:
         default="cuda",
         metadata={"help": "The device type on which the model will run. Default is 'cuda' for GPU acceleration."},
     )
+    paraformer_stt_language: str = field(
+        default="",
+        metadata={
+            "help": (
+                "Optional FunASR language hint for models that support it "
+                "(e.g. Fun-ASR-Nano: '英文' / '中文' / '日文'). Empty keeps model default."
+            )
+        },
+    )

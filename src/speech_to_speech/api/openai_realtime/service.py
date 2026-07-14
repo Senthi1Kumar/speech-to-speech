@@ -180,6 +180,10 @@ class ConnState(BaseModel):
     # write-back (cross-thread), so they are buffered here and flushed in order
     # once the response completes. See ConversationHandler.flush_deferred_items.
     deferred_items: list[ConversationItem] = Field(default_factory=list)
+    # llama.cpp decode/prefill rates from the last TokenUsageEvent (UI latency panel).
+    last_decode_tok_s: float | None = None
+    last_prefill_tok_s: float | None = None
+    last_llm_tpot_ms: float | None = None
 
 
 class RealtimeService:
@@ -455,10 +459,17 @@ class RealtimeService:
         st = self._state(conn_id)
         st.response_usage.input_tokens += event.input_tokens
         st.response_usage.output_tokens += event.output_tokens
+        if event.decode_tok_s is not None:
+            st.last_decode_tok_s = event.decode_tok_s
+        if event.prefill_tok_s is not None:
+            st.last_prefill_tok_s = event.prefill_tok_s
+        if event.llm_tpot_ms is not None:
+            st.last_llm_tpot_ms = event.llm_tpot_ms
         logger.info(
-            "Token usage (response): input=%d, output=%d",
+            "Token usage (response): input=%d, output=%d decode_tok_s=%s",
             st.response_usage.input_tokens,
             st.response_usage.output_tokens,
+            f"{st.last_decode_tok_s:.0f}" if st.last_decode_tok_s is not None else "—",
         )
         return []
 

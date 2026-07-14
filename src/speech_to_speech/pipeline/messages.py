@@ -94,6 +94,9 @@ class TokenUsage(PipelineMessage):
     tag: Literal["token_usage"] = "token_usage"
     input_tokens: int
     output_tokens: int
+    decode_tok_s: float | None = None
+    prefill_tok_s: float | None = None
+    llm_tpot_ms: float | None = None
     turn_id: str | None = None
     turn_revision: int | None = None
 

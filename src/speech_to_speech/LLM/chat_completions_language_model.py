@@ -31,6 +31,7 @@ from speech_to_speech.LLM.base_openai_compatible_language_model import (
     TextDelta,
     ToolCall,
     Usage,
+    _usage_from_openai,
 )
 from speech_to_speech.LLM.chat import Chat
 from speech_to_speech.LLM.compaction_prompt import CompactGenerateFn
@@ -193,6 +194,9 @@ class ChatCompletionsApiModelHandler(BaseOpenAICompatibleHandler):
         create_kwargs: dict[str, Any] = dict(optional_kwargs)
         if self.stream:
             create_kwargs["stream_options"] = {"include_usage": True}
+        # Cap completion length for the voice loop (LFM meta-prompt runaway).
+        max_tok = self.gen_kwargs.get("max_new_tokens") or self.gen_kwargs.get("max_tokens")
+        create_kwargs["max_tokens"] = int(max_tok) if max_tok is not None else 256
         return self.client.chat.completions.create(
             model=self.model_name,
             messages=api_input,  # type: ignore[arg-type]  # runtime dicts match the Chat Completions message shape
@@ -212,9 +216,7 @@ class ChatCompletionsApiModelHandler(BaseOpenAICompatibleHandler):
         for chunk in api_response:
             # Usage-only trailing chunk (choices == []) when include_usage is set.
             if chunk.usage is not None:
-                usage = Usage(
-                    input_tokens=chunk.usage.prompt_tokens or 0, output_tokens=chunk.usage.completion_tokens or 0
-                )
+                usage = _usage_from_openai(chunk.usage, chunk)
             if not chunk.choices:
                 continue
             delta = chunk.choices[0].delta
@@ -244,7 +246,7 @@ class ChatCompletionsApiModelHandler(BaseOpenAICompatibleHandler):
     def _iter_response_events(self, api_response: Any) -> Iterator[ProviderEvent]:
         usage = api_response.usage
         if usage:
-            yield Usage(input_tokens=usage.prompt_tokens or 0, output_tokens=usage.completion_tokens or 0)
+            yield _usage_from_openai(usage, api_response)
         # A valid-but-empty response (e.g. content filter) returns no choices;
         # complete cleanly with no assistant text rather than raising IndexError.
         message = api_response.choices[0].message if api_response.choices else None

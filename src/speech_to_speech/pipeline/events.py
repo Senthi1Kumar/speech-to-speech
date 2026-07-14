@@ -82,6 +82,9 @@ class TokenUsageEvent(PipelineEvent):
     type: Literal["token_usage"] = "token_usage"
     input_tokens: int = 0
     output_tokens: int = 0
+    decode_tok_s: float | None = None
+    prefill_tok_s: float | None = None
+    llm_tpot_ms: float | None = None
     turn_id: str | None = None
     turn_revision: int | None = None
 
