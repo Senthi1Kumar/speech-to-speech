@@ -30,7 +30,9 @@ logger = logging.getLogger(__name__)
 
 console = Console()
 
-PROMPT = "Please transcribe this audio."
+# Official HF Audio8 prompt (examples/transcribe.py). Do NOT put the word
+# "English" in the prompt — the 0.1B model regurgitates it as "English English…".
+DEFAULT_PROMPT = "Please transcribe this audio."
 SPECIAL_TOKEN_PATTERN = re.compile(
     r"<\|(?:"
     r"bicodec_(?:semantic|global)_\d+|"
@@ -86,13 +88,41 @@ def remove_special_tokens(text: str) -> str:
     return SPECIAL_TOKEN_PATTERN.sub("", text).strip()
 
 
+def _collapse_token_loops(text: str, *, max_repeat: int = 3) -> str:
+    """Drop ASR loops like 'English English English…' (prompt regurgitation)."""
+    toks = text.split()
+    if len(toks) < max_repeat + 1:
+        return text
+    # Single-token dominance (e.g. 100x "English")
+    from collections import Counter
+
+    counts = Counter(t.lower().strip(".,!?;:") for t in toks)
+    top_word, top_n = counts.most_common(1)[0]
+    if top_n >= max(8, int(0.6 * len(toks))) and len(counts) <= 3:
+        return ""
+    out: list[str] = []
+    run = 0
+    prev = None
+    for tok in toks:
+        key = tok.lower()
+        if key == prev:
+            run += 1
+            if run >= max_repeat:
+                continue
+        else:
+            prev, run = key, 1
+        out.append(tok)
+    return " ".join(out)
+
+
 def normalize_prediction_text(text: str) -> str:
     if not text:
         return ""
     text = truncate_generation_text(text)
     text = remove_special_tokens(text)
     text = re.sub(r"\s+", " ", text).strip()
-    return LEADING_NOISE_PATTERN.sub("", text).strip()
+    text = LEADING_NOISE_PATTERN.sub("", text).strip()
+    return _collapse_token_loops(text)
 
 
 def _normalize_token_ids(token_ids: Any) -> list[int]:
@@ -182,6 +212,9 @@ class Audio8STTHandler(BaseSTTHandler):
         max_new_tokens: int = 128,
         attn_impl: str = "eager",
         block_token_id_from: int = 151670,
+        language: str = "en",
+        prompt: str = "",
+        skip_progressive: bool = True,
         gen_kwargs: dict[str, Any] | None = None,
     ) -> None:
         del gen_kwargs
@@ -191,6 +224,14 @@ class Audio8STTHandler(BaseSTTHandler):
         self.block_token_id_from = int(block_token_id_from)
         self.sample_rate = 16000
         self.max_audio_seconds = 30
+        # Non-streaming: progressive VAD chunks waste decode and amplify noise→zh.
+        self.skip_progressive = bool(skip_progressive)
+        custom = (prompt or "").strip()
+        # Always prefer official short prompt unless operator overrides.
+        # Language codes are accepted for API compat but must not inject
+        # the word into the prompt (regurgitation failure on Audio8-0.1B).
+        self.prompt = custom or DEFAULT_PROMPT
+        self.language = (language or "en").strip().lower() or "en"
 
         try:
             from transformers import AutoModelForCausalLM, AutoProcessor, AutoTokenizer
@@ -276,7 +317,7 @@ class Audio8STTHandler(BaseSTTHandler):
                     "role": "user",
                     "content": [
                         {"type": "audio", "path": wav_path},
-                        {"type": "text", "text": PROMPT},
+                        {"type": "text", "text": self.prompt},
                     ],
                 }
             ]
@@ -308,6 +349,9 @@ class Audio8STTHandler(BaseSTTHandler):
                 "max_new_tokens": self.max_new_tokens,
                 "do_sample": False,
                 "pad_token_id": self.tokenizer.pad_token_id,
+                # Stop "English English…" / other n-gram loops from the prompt.
+                "no_repeat_ngram_size": 3,
+                "repetition_penalty": 1.15,
             }
             if self.eos_token_ids:
                 generate_kwargs["eos_token_id"] = self.eos_token_ids
@@ -346,6 +390,12 @@ class Audio8STTHandler(BaseSTTHandler):
         _ = self._generate(dummy)
 
     def process(self, vad_audio: STTIn) -> Iterator[STTOut]:
+        # Audio8 has no built-in VAD — Silero owns boundaries. Progressive
+        # re-decode is expensive and often turns noise into zh fragments.
+        if self.skip_progressive and vad_audio.mode == "progressive":
+            logger.debug("audio8: skip progressive segment (final-only)")
+            return
+
         logger.debug("infering audio8...")
         pred_text = self._generate(vad_audio.audio)
 

@@ -39,3 +39,28 @@ class Audio8STTHandlerArguments:
             )
         },
     )
+    audio8_stt_language: str = field(
+        default="en",
+        metadata={
+            "help": (
+                "Reserved language tag (default en). Prompt stays the official "
+                "'Please transcribe this audio.' — do not inject language words "
+                "(Audio8-0.1B regurgitates them)."
+            )
+        },
+    )
+    audio8_stt_prompt: str = field(
+        default="",
+        metadata={
+            "help": "Optional full prompt override. Empty uses the language-based English-only default."
+        },
+    )
+    audio8_stt_skip_progressive: bool = field(
+        default=True,
+        metadata={
+            "help": (
+                "Ignore Silero progressive STT chunks; decode final segments only "
+                "(recommended — Audio8 is non-streaming). Default True."
+            )
+        },
+    )

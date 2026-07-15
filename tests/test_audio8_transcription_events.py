@@ -5,10 +5,11 @@ from speech_to_speech.STT import audio8_handler
 from speech_to_speech.STT.audio8_handler import Audio8STTHandler
 
 
-def _handler():
+def _handler(*, skip_progressive: bool = True):
     handler = object.__new__(Audio8STTHandler)
     handler.device = "cpu"
     handler.sample_rate = 16000
+    handler.skip_progressive = skip_progressive
     handler._generate = lambda audio: "set the AC to twenty"
     return handler
 
@@ -34,12 +35,29 @@ def test_final_audio8_transcription(monkeypatch):
     assert result[0].speech_stopped_at_s == 1.0
 
 
-def test_progressive_audio8_partial(monkeypatch):
+def test_progressive_skipped_by_default(monkeypatch):
     monkeypatch.setattr(audio8_handler.console, "print", lambda *args, **kwargs: None)
     monkeypatch.setattr(audio8_handler.torch.mps, "empty_cache", lambda: None)
 
     result = list(
-        _handler().process(
+        _handler(skip_progressive=True).process(
+            VADAudio(
+                audio=np.zeros(16000, dtype=np.float32),
+                mode="progressive",
+                turn_id="turn_1",
+                turn_revision=1,
+            )
+        )
+    )
+    assert result == []
+
+
+def test_progressive_audio8_partial_when_enabled(monkeypatch):
+    monkeypatch.setattr(audio8_handler.console, "print", lambda *args, **kwargs: None)
+    monkeypatch.setattr(audio8_handler.torch.mps, "empty_cache", lambda: None)
+
+    result = list(
+        _handler(skip_progressive=False).process(
             VADAudio(
                 audio=np.zeros(16000, dtype=np.float32),
                 mode="progressive",
@@ -57,3 +75,17 @@ def test_normalize_prediction_text_strips_control():
 
     raw = "<|text|>pay fifty to Mom<|im_end|>"
     assert normalize_prediction_text(raw) == "pay fifty to Mom"
+
+
+def test_collapse_english_loop():
+    from speech_to_speech.STT.audio8_handler import normalize_prediction_text
+
+    loop = " ".join(["English"] * 80)
+    assert normalize_prediction_text(loop) == ""
+
+
+def test_keeps_normal_english_sentence():
+    from speech_to_speech.STT.audio8_handler import normalize_prediction_text
+
+    text = "Check my calendar for tomorrow please."
+    assert normalize_prediction_text(text) == text
