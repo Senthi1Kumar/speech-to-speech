@@ -29,13 +29,14 @@ class ModuleArguments:
             "parakeet-tdt",
             "paraformer",
             "sensevoice",
+            "audio8",
         ]
     ] = field(
         default="parakeet-tdt",
         metadata={
             "help": (
                 "The STT to use. Either 'whisper', 'whisper-mlx', 'mlx-audio-whisper', "
-                "'faster-whisper', 'parakeet-tdt', 'paraformer', or 'sensevoice'. "
+                "'faster-whisper', 'parakeet-tdt', 'paraformer', 'sensevoice', or 'audio8'. "
                 "Default is 'parakeet-tdt'."
             )
         },

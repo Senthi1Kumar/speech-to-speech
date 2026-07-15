@@ -37,6 +37,7 @@ from speech_to_speech.arguments_classes.mlx_audio_whisper_arguments import (
 from speech_to_speech.arguments_classes.module_arguments import ModuleArguments
 from speech_to_speech.arguments_classes.paraformer_stt_arguments import ParaformerSTTHandlerArguments
 from speech_to_speech.arguments_classes.sensevoice_stt_arguments import SenseVoiceSTTHandlerArguments
+from speech_to_speech.arguments_classes.audio8_stt_arguments import Audio8STTHandlerArguments
 from speech_to_speech.arguments_classes.parakeet_tdt_arguments import (
     ParakeetTDTSTTHandlerArguments,
 )
@@ -99,6 +100,7 @@ class ParsedArguments:
     whisper_stt_handler_kwargs: WhisperSTTHandlerArguments
     paraformer_stt_handler_kwargs: ParaformerSTTHandlerArguments
     sensevoice_stt_handler_kwargs: SenseVoiceSTTHandlerArguments
+    audio8_stt_handler_kwargs: Audio8STTHandlerArguments
     faster_whisper_stt_handler_kwargs: FasterWhisperSTTHandlerArguments
     mlx_audio_whisper_stt_handler_kwargs: MLXAudioWhisperSTTHandlerArguments
     parakeet_tdt_stt_handler_kwargs: ParakeetTDTSTTHandlerArguments
@@ -159,6 +161,7 @@ def parse_arguments() -> ParsedArguments:
             WhisperSTTHandlerArguments,
             ParaformerSTTHandlerArguments,
             SenseVoiceSTTHandlerArguments,
+            Audio8STTHandlerArguments,
             FasterWhisperSTTHandlerArguments,
             MLXAudioWhisperSTTHandlerArguments,
             ParakeetTDTSTTHandlerArguments,
@@ -189,6 +192,7 @@ def parse_arguments() -> ParsedArguments:
         whisper_stt_handler_kwargs=by_type[WhisperSTTHandlerArguments],
         paraformer_stt_handler_kwargs=by_type[ParaformerSTTHandlerArguments],
         sensevoice_stt_handler_kwargs=by_type[SenseVoiceSTTHandlerArguments],
+        audio8_stt_handler_kwargs=by_type[Audio8STTHandlerArguments],
         faster_whisper_stt_handler_kwargs=by_type[FasterWhisperSTTHandlerArguments],
         mlx_audio_whisper_stt_handler_kwargs=by_type[MLXAudioWhisperSTTHandlerArguments],
         parakeet_tdt_stt_handler_kwargs=by_type[ParakeetTDTSTTHandlerArguments],
@@ -277,6 +281,8 @@ def overwrite_device_argument(common_device: Optional[str], *handler_kwargs: Any
                 kwargs.paraformer_stt_device = common_device
             if hasattr(kwargs, "sensevoice_stt_device"):
                 kwargs.sensevoice_stt_device = common_device
+            if hasattr(kwargs, "audio8_stt_device"):
+                kwargs.audio8_stt_device = common_device
             if hasattr(kwargs, "facebook_mms_device"):
                 kwargs.facebook_mms_device = common_device
             if hasattr(kwargs, "qwen3_tts_device"):
@@ -297,6 +303,7 @@ def prepare_all_args(
     whisper_stt_handler_kwargs: WhisperSTTHandlerArguments,
     paraformer_stt_handler_kwargs: ParaformerSTTHandlerArguments,
     sensevoice_stt_handler_kwargs: SenseVoiceSTTHandlerArguments,
+    audio8_stt_handler_kwargs: Audio8STTHandlerArguments,
     faster_whisper_stt_handler_kwargs: FasterWhisperSTTHandlerArguments,
     mlx_audio_whisper_stt_handler_kwargs: MLXAudioWhisperSTTHandlerArguments,
     parakeet_tdt_stt_handler_kwargs: ParakeetTDTSTTHandlerArguments,
@@ -314,6 +321,7 @@ def prepare_all_args(
         faster_whisper_stt_handler_kwargs,
         paraformer_stt_handler_kwargs,
         sensevoice_stt_handler_kwargs,
+        audio8_stt_handler_kwargs,
         mlx_audio_whisper_stt_handler_kwargs,
         parakeet_tdt_stt_handler_kwargs,
         language_model_handler_kwargs,
@@ -329,6 +337,7 @@ def prepare_all_args(
     rename_args(faster_whisper_stt_handler_kwargs, "faster_whisper_stt")
     rename_args(paraformer_stt_handler_kwargs, "paraformer_stt")
     rename_args(sensevoice_stt_handler_kwargs, "sensevoice_stt")
+    rename_args(audio8_stt_handler_kwargs, "audio8_stt")
     rename_args(mlx_audio_whisper_stt_handler_kwargs, "mlx_audio_whisper")
     rename_args(parakeet_tdt_stt_handler_kwargs, "parakeet_tdt")
     rename_args(language_model_handler_kwargs, "llm")
@@ -376,6 +385,7 @@ def _build_pipeline_handlers(
     faster_whisper_stt_handler_kwargs: FasterWhisperSTTHandlerArguments,
     paraformer_stt_handler_kwargs: ParaformerSTTHandlerArguments,
     sensevoice_stt_handler_kwargs: SenseVoiceSTTHandlerArguments,
+    audio8_stt_handler_kwargs: Audio8STTHandlerArguments,
     mlx_audio_whisper_stt_handler_kwargs: MLXAudioWhisperSTTHandlerArguments,
     parakeet_tdt_stt_handler_kwargs: ParakeetTDTSTTHandlerArguments,
     language_model_handler_kwargs: LanguageModelHandlerArguments,
@@ -420,6 +430,7 @@ def _build_pipeline_handlers(
         faster_whisper_stt_handler_kwargs,
         paraformer_stt_handler_kwargs,
         sensevoice_stt_handler_kwargs,
+        audio8_stt_handler_kwargs,
         mlx_audio_whisper_stt_handler_kwargs,
         parakeet_tdt_stt_handler_kwargs,
     )
@@ -466,6 +477,7 @@ def _build_realtime_pipeline_unit(
     faster_whisper_stt_handler_kwargs: FasterWhisperSTTHandlerArguments,
     paraformer_stt_handler_kwargs: ParaformerSTTHandlerArguments,
     sensevoice_stt_handler_kwargs: SenseVoiceSTTHandlerArguments,
+    audio8_stt_handler_kwargs: Audio8STTHandlerArguments,
     mlx_audio_whisper_stt_handler_kwargs: MLXAudioWhisperSTTHandlerArguments,
     parakeet_tdt_stt_handler_kwargs: ParakeetTDTSTTHandlerArguments,
     language_model_handler_kwargs: LanguageModelHandlerArguments,
@@ -490,6 +502,7 @@ def _build_realtime_pipeline_unit(
     faster_whisper_kw = deepcopy(faster_whisper_stt_handler_kwargs)
     paraformer_kw = deepcopy(paraformer_stt_handler_kwargs)
     sensevoice_kw = deepcopy(sensevoice_stt_handler_kwargs)
+    audio8_kw = deepcopy(audio8_stt_handler_kwargs)
     mlx_audio_whisper_kw = deepcopy(mlx_audio_whisper_stt_handler_kwargs)
     parakeet_kw = deepcopy(parakeet_tdt_stt_handler_kwargs)
     lm_kw = deepcopy(language_model_handler_kwargs)
@@ -564,6 +577,7 @@ def _build_realtime_pipeline_unit(
         faster_whisper_stt_handler_kwargs=faster_whisper_kw,
         paraformer_stt_handler_kwargs=paraformer_kw,
         sensevoice_stt_handler_kwargs=sensevoice_kw,
+        audio8_stt_handler_kwargs=audio8_kw,
         mlx_audio_whisper_stt_handler_kwargs=mlx_audio_whisper_kw,
         parakeet_tdt_stt_handler_kwargs=parakeet_kw,
         language_model_handler_kwargs=lm_kw,
@@ -602,6 +616,7 @@ def build_pipeline(
     faster_whisper_stt_handler_kwargs: FasterWhisperSTTHandlerArguments,
     paraformer_stt_handler_kwargs: ParaformerSTTHandlerArguments,
     sensevoice_stt_handler_kwargs: SenseVoiceSTTHandlerArguments,
+    audio8_stt_handler_kwargs: Audio8STTHandlerArguments,
     mlx_audio_whisper_stt_handler_kwargs: MLXAudioWhisperSTTHandlerArguments,
     parakeet_tdt_stt_handler_kwargs: ParakeetTDTSTTHandlerArguments,
     language_model_handler_kwargs: LanguageModelHandlerArguments,
@@ -665,6 +680,7 @@ def build_pipeline(
                 faster_whisper_stt_handler_kwargs=faster_whisper_stt_handler_kwargs,
                 paraformer_stt_handler_kwargs=paraformer_stt_handler_kwargs,
                 sensevoice_stt_handler_kwargs=sensevoice_stt_handler_kwargs,
+                audio8_stt_handler_kwargs=audio8_stt_handler_kwargs,
                 mlx_audio_whisper_stt_handler_kwargs=mlx_audio_whisper_stt_handler_kwargs,
                 parakeet_tdt_stt_handler_kwargs=parakeet_tdt_stt_handler_kwargs,
                 language_model_handler_kwargs=language_model_handler_kwargs,
@@ -750,6 +766,7 @@ def build_pipeline(
         faster_whisper_stt_handler_kwargs=faster_whisper_stt_handler_kwargs,
         paraformer_stt_handler_kwargs=paraformer_stt_handler_kwargs,
         sensevoice_stt_handler_kwargs=sensevoice_stt_handler_kwargs,
+        audio8_stt_handler_kwargs=audio8_stt_handler_kwargs,
         mlx_audio_whisper_stt_handler_kwargs=mlx_audio_whisper_stt_handler_kwargs,
         parakeet_tdt_stt_handler_kwargs=parakeet_tdt_stt_handler_kwargs,
         language_model_handler_kwargs=language_model_handler_kwargs,
@@ -774,6 +791,7 @@ def get_stt_handler(
     faster_whisper_stt_handler_kwargs: FasterWhisperSTTHandlerArguments,
     paraformer_stt_handler_kwargs: ParaformerSTTHandlerArguments,
     sensevoice_stt_handler_kwargs: SenseVoiceSTTHandlerArguments,
+    audio8_stt_handler_kwargs: Audio8STTHandlerArguments,
     mlx_audio_whisper_stt_handler_kwargs: MLXAudioWhisperSTTHandlerArguments,
     parakeet_tdt_stt_handler_kwargs: ParakeetTDTSTTHandlerArguments,
 ) -> BaseHandler[STTIn, STTOut]:
@@ -841,6 +859,17 @@ def get_stt_handler(
                 setup_kwargs=vars(sensevoice_stt_handler_kwargs),
             )
         )
+    elif module_kwargs.stt == "audio8":
+        from speech_to_speech.STT.audio8_handler import Audio8STTHandler
+
+        return with_speculative_turns(
+            Audio8STTHandler(
+                stop_event,
+                queue_in=spoken_prompt_queue,
+                queue_out=text_prompt_queue,
+                setup_kwargs=vars(audio8_stt_handler_kwargs),
+            )
+        )
     elif module_kwargs.stt == "faster-whisper":
         from speech_to_speech.STT.faster_whisper_handler import FasterWhisperSTTHandler
 
@@ -872,7 +901,7 @@ def get_stt_handler(
         )
     else:
         raise ValueError(
-            "The STT should be either whisper, whisper-mlx, mlx-audio-whisper, faster-whisper, parakeet-tdt, paraformer, or sensevoice."
+            "The STT should be either whisper, whisper-mlx, mlx-audio-whisper, faster-whisper, parakeet-tdt, paraformer, or sensevoice, or audio8."
         )
 
 
@@ -1023,6 +1052,7 @@ def main() -> None:
         args.whisper_stt_handler_kwargs,
         args.paraformer_stt_handler_kwargs,
         args.sensevoice_stt_handler_kwargs,
+        args.audio8_stt_handler_kwargs,
         args.faster_whisper_stt_handler_kwargs,
         args.mlx_audio_whisper_stt_handler_kwargs,
         args.parakeet_tdt_stt_handler_kwargs,
@@ -1069,6 +1099,7 @@ def main() -> None:
         args.faster_whisper_stt_handler_kwargs,
         args.paraformer_stt_handler_kwargs,
         args.sensevoice_stt_handler_kwargs,
+        args.audio8_stt_handler_kwargs,
         args.mlx_audio_whisper_stt_handler_kwargs,
         args.parakeet_tdt_stt_handler_kwargs,
         args.language_model_handler_kwargs,
